@@ -1,0 +1,71 @@
+version: '3'
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stocks_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - .:/app
+
+  streamlit:
+    build: .
+    command: streamlit run /app/streamlit/app.py
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
+  jupyter:
+    build: .
+    # Utilisation du script d'entrypoint personnalisé
+    command: ["bash", "/app/jupyter_entrypoint.sh"]
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - streamlit
+      - pgadmin
+      - airflow
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: secret
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
+  airflow:
+    image: apache/airflow:2.6.0
+    environment:
+      # Changement de LocalExecutor à SequentialExecutor pour utiliser SQLite
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
+      AIRFLOW__CORE__FERNET_KEY: "3ULsKz-1RqRMxVVvkwJg5FBR_nkHtHWg09-ti37uXa4="
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./plugins:/opt/airflow/plugins
+      - ./start_airflow.sh:/start_airflow.sh
+      - .:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    command: ["bash", "/start_airflow.sh"]
+
+volumes:
+  postgres_data:
+  pgadmin_data:

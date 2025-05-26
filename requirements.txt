@@ -1,0 +1,15 @@
+pandas
+yfinance
+requests
+tqdm
+jupyter
+psycopg2-binary
+streamlit
+streamlit-option-menu
+lxml
+beautifulsoup4
+plotly
+streamlit-aggrid
+netcat
+papermill
+nbconvert
